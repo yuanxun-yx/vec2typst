@@ -66,12 +66,13 @@ def main():
     tree.write(svg_path, pretty_print=True, xml_declaration=True)
     with typ_path.open("w") as f:
         f.write(
+            "#let p(alignment, ..args, body) = place(alignment + bottom, ..args, body)\n"
             "#let fig(width: auto) = box(width: width)[\n"
             f'#image("{svg_path.name}", width: 100%)\n'
         )
         for t in texts:
             f.write(
-                f"#place(bottom + {t.alignment}, dx: {t.dx * 100}%, dy: {t.dy * 100}%)[{t.text}]\n"
+                f"  #p({t.alignment}, dx: {t.dx * 100:.2f}%, dy: {t.dy * 100:.2f}%)[{t.text}]\n"
             )
         f.write("]")
 
