@@ -1,0 +1,17 @@
+[project]
+name = "vec2typst"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "lxml>=6.1",
+]
+
+[project.scripts]
+vec2typst = "vec2typst.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = true
