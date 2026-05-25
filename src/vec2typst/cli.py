@@ -1,7 +1,9 @@
-from lxml import etree
 import argparse
-from pathlib import Path
+import re
 from dataclasses import dataclass
+from pathlib import Path
+
+from lxml import etree
 
 
 @dataclass(frozen=True)
@@ -10,6 +12,10 @@ class Text:
     dx: float
     dy: float
     text: str
+    rotate: float
+
+
+TRANSFORM_RE = re.compile(r"([a-zA-Z]+)\s*\(([^)]*)\)")
 
 
 def main():
@@ -32,8 +38,8 @@ def main():
         ".//svg:text", namespaces={"svg": "http://www.w3.org/2000/svg"}
     ):
         t = elem.xpath("string()")
-        x = float(elem.get("x"))
-        y = float(elem.get("y"))
+        x = float(elem.get("x", "0"))
+        y = float(elem.get("y", "0"))
 
         style = elem.get("style")
         res = {}
@@ -61,7 +67,28 @@ def main():
         # use approximation bottom here instead
         dy = (y - y_min) / h - 1.0
 
-        texts.append(Text(alignment=anchor, dx=dx, dy=dy, text=t))
+        transform = elem.get("transform")
+        rotate = 0.0
+        if transform:
+            for name, args in TRANSFORM_RE.findall(transform):
+                values = map(float, re.split(r"[,\s]+", args.strip()))
+                if name == "rotate":
+                    angle, cx, cy = values
+                    if angle == 0:
+                        continue
+                    if cx != x:
+                        raise NotImplementedError(
+                            f"rotate cx {cx} does not match element x {x}"
+                        )
+                    if cy != y:
+                        raise NotImplementedError(
+                            f"rotate cy {cy} does not match element y {y}"
+                        )
+                    rotate += angle
+                else:
+                    raise NotImplementedError(f"unknown transform: {name}")
+
+        texts.append(Text(alignment=anchor, dx=dx, dy=dy, text=t, rotate=rotate))
 
         elem.getparent().remove(elem)
 
@@ -76,9 +103,14 @@ def main():
             f'#image("{svg_path.name}", width: 100%)\n'
         )
         for t in texts:
-            f.write(
-                f"  #p({t.alignment}, dx: {t.dx * 100:.2f}%, dy: {t.dy * 100:.2f}%)[{t.text}]\n"
-            )
+            f.write(f"#p({t.alignment}, dx: {t.dx * 100:.2f}%, dy: {t.dy * 100:.2f}%)[")
+            depth = 1
+            if t.rotate != 0:
+                f.write(f"#rotate({t.rotate:.3f}deg, origin: {t.alignment} + bottom)[")
+                depth += 1
+            f.write(t.text)
+            f.write("]" * depth)
+            f.write("\n")
         f.write("]")
 
 

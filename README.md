@@ -5,7 +5,6 @@ A Typst equivalent of Inkscape's PDF+LaTeX SVG export.
 
 > [!NOTE]
 > vec2typst is still in an early stage.
-> Currently, SVG transforms are not yet supported.
 > Future versions may also support PDF-based workflows.
 
 ## Installation
