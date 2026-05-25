@@ -27,7 +27,7 @@ def main():
     tree = etree.parse(file_path, parser)
     root = tree.getroot()
     view_box = root.get("viewBox")
-    x0, y0, w, h = map(float, view_box.split(" "))
+    x_min, y_min, w, h = map(float, view_box.split(" "))
     for elem in root.xpath(
         ".//svg:text", namespaces={"svg": "http://www.w3.org/2000/svg"}
     ):
@@ -42,7 +42,7 @@ def main():
             res[k] = v
         style = res
 
-        dx = (x - x0) / w
+        dx = (x - x_min) / w
         text_anchor = style["text-anchor"]
         if text_anchor == "start":
             anchor = "left"
@@ -57,7 +57,7 @@ def main():
 
         # vertical text anchor for svg is text baseline
         # use approximation bottom here instead
-        dy = (y - y0) / h - 1.0
+        dy = (y - y_min) / h - 1.0
 
         texts.append(Text(alignment=anchor, dx=dx, dy=dy, text=t))
 
