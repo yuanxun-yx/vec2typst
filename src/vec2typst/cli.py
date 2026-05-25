@@ -65,6 +65,9 @@ def main():
 
         elem.getparent().remove(elem)
 
+    if not texts:
+        raise ValueError("no text elements found")
+
     tree.write(svg_path, pretty_print=True, xml_declaration=True)
     with typ_path.open("w") as f:
         f.write(
