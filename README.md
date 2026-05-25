@@ -22,7 +22,7 @@ vec2typst figure.svg
 
 This generates: 
 - `figure.typ`
-- `figure_notext.svg`. 
+- `figure_notext.svg`
 
 To include the figure in your document:
 

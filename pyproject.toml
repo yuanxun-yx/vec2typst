@@ -30,5 +30,5 @@ Homepage = "https://github.com/yuanxun-yx/vec2typst"
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
-[tool.uv]
-package = true
+[tool.hatch.build.targets.wheel]
+packages = ["src/vec2typst"]
