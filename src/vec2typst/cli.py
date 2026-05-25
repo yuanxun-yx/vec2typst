@@ -38,8 +38,10 @@ def main():
         style = elem.get("style")
         res = {}
         for field in style.split(";"):
+            if not field:
+                continue
             k, v = field.split(":")
-            res[k] = v
+            res[k.strip()] = v.strip()
         style = res
 
         dx = (x - x_min) / w
