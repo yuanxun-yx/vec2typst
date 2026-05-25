@@ -5,6 +5,8 @@ from pathlib import Path
 
 from lxml import etree
 
+from .affine import Affine2D, rotate, translate
+
 
 @dataclass(frozen=True)
 class Text:
@@ -50,8 +52,22 @@ def main():
             res[k.strip()] = v.strip()
         style = res
 
+        transform = elem.get("transform")
+        affine = Affine2D()
+        if transform:
+            for name, args in TRANSFORM_RE.findall(transform):
+                values = map(float, re.split(r"[,\s]+", args.strip()))
+                if name == "rotate":
+                    affine @= rotate(*values)
+                elif name == "translate":
+                    affine @= translate(*values)
+                else:
+                    raise NotImplementedError(f"unknown transform: {name}")
+
+        x, y = affine @ (x, y)
+
         dx = (x - x_min) / w
-        text_anchor = style["text-anchor"]
+        text_anchor = style.get("text-anchor", "start")
         if text_anchor == "start":
             anchor = "left"
         elif text_anchor == "middle":
@@ -67,28 +83,7 @@ def main():
         # use approximation bottom here instead
         dy = (y - y_min) / h - 1.0
 
-        transform = elem.get("transform")
-        rotate = 0.0
-        if transform:
-            for name, args in TRANSFORM_RE.findall(transform):
-                values = map(float, re.split(r"[,\s]+", args.strip()))
-                if name == "rotate":
-                    angle, cx, cy = values
-                    if angle == 0:
-                        continue
-                    if cx != x:
-                        raise NotImplementedError(
-                            f"rotate cx {cx} does not match element x {x}"
-                        )
-                    if cy != y:
-                        raise NotImplementedError(
-                            f"rotate cy {cy} does not match element y {y}"
-                        )
-                    rotate += angle
-                else:
-                    raise NotImplementedError(f"unknown transform: {name}")
-
-        texts.append(Text(alignment=anchor, dx=dx, dy=dy, text=t, rotate=rotate))
+        texts.append(Text(alignment=anchor, dx=dx, dy=dy, text=t, rotate=affine.angle))
 
         elem.getparent().remove(elem)
 
