@@ -63,9 +63,8 @@ def main():
             res[k.strip()] = v.strip()
         style = res
 
-        font_size = style.get("font-size", 1)
-        if font_size != 1:
-            value, unit = SIZE_RE.match(font_size).groups()
+        if "font-size" in style:
+            value, unit = SIZE_RE.match(style["font-size"]).groups()
             value = float(value)
             if unit in SIZE_CONVERTION_PX:
                 value *= SIZE_CONVERTION_PX[unit]
@@ -73,6 +72,8 @@ def main():
                 raise NotImplementedError(f"unknown unit: {unit}")
             # base size of svg: 16px
             font_size = value / 16
+        else:
+            font_size = 1
 
         transform = elem.get("transform")
         affine = Affine2D()
