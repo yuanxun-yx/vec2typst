@@ -15,9 +15,20 @@ class Text:
     dy: float
     text: str
     rotate: float
+    font_size: float
 
 
-TRANSFORM_RE = re.compile(r"([a-zA-Z]+)\s*\(([^)]*)\)")
+TRANSFORM_RE = re.compile(r"([a-z]+)\s*\(([^)]*)\)")
+SIZE_RE = re.compile(r"([-+]?\d*\.?\d+)([a-z%]*)")
+
+SIZE_CONVERTION_PX: dict[str, float] = {
+    "px": 1.0,
+    "pt": 4 / 3,
+    "pc": 16,
+    "mm": 96 / 25.4,
+    "cm": 96 / 2.54,
+    "in": 96,
+}
 
 
 def main():
@@ -52,6 +63,17 @@ def main():
             res[k.strip()] = v.strip()
         style = res
 
+        font_size = style.get("font-size", 1)
+        if font_size != 1:
+            value, unit = SIZE_RE.match(font_size).groups()
+            value = float(value)
+            if unit in SIZE_CONVERTION_PX:
+                value *= SIZE_CONVERTION_PX[unit]
+            else:
+                raise NotImplementedError(f"unknown unit: {unit}")
+            # base size of svg: 16px
+            font_size = value / 16
+
         transform = elem.get("transform")
         affine = Affine2D()
         if transform:
@@ -83,7 +105,16 @@ def main():
         # use approximation bottom here instead
         dy = (y - y_min) / h - 1.0
 
-        texts.append(Text(alignment=anchor, dx=dx, dy=dy, text=t, rotate=affine.angle))
+        texts.append(
+            Text(
+                alignment=anchor,
+                dx=dx,
+                dy=dy,
+                text=t,
+                rotate=affine.angle,
+                font_size=font_size,
+            )
+        )
 
         elem.getparent().remove(elem)
 
@@ -98,8 +129,12 @@ def main():
             f'#image("{svg_path.name}", width: 100%)\n'
         )
         for t in texts:
-            f.write(f"#p({t.alignment}, dx: {t.dx * 100:.2f}%, dy: {t.dy * 100:.2f}%)[")
+            f.write(
+                f"#p({t.alignment}, dx: {t.dx * 100:.2f}%, dy: {t.dy * 100:.2f}%)[\n"
+            )
             depth = 1
+            if t.font_size != 1:
+                f.write(f"#set text(size: {t.font_size:.2f}em)\n")
             if t.rotate != 0:
                 f.write(f"#rotate({t.rotate:.3f}deg, origin: {t.alignment} + bottom)[")
                 depth += 1
